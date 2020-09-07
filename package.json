@@ -1,17 +1,7 @@
 {
-  "name": "@opendecide/ngx-segment-analytics",
-  "version": "1.1.2",
-  "scripts": {
-    "build": "gulp build",
-    "build:watch": "gulp",
-    "docs": "npm run docs:build",
-    "docs:build": "compodoc -p tsconfig.json -n ngx-segment-analytics -d docs --hideGenerator",
-    "docs:serve": "npm run docs:build -- -s",
-    "docs:watch": "npm run docs:build -- -s -w",
-    "lint": "tslint --project tsconfig.json src/**/*.ts",
-    "test": "echo 'not implemented yet'",
-    "test_not_yet": "tsc && karma start"
-  },
+  "name": "ngx-segment-analytics",
+  "version": "1.2.0",
+  "description": "Segment Analytics for Angular",
   "repository": {
     "type": "git",
     "url": "https://github.com/opendecide/ngx-segment-analytics"
@@ -28,40 +18,13 @@
   "bugs": {
     "url": "https://github.com/opendecide/ngx-segment-analytics/issues"
   },
-  "devDependencies": {
-    "@angular/common": "^4.0.0",
-    "@angular/compiler": "^4.0.0",
-    "@angular/compiler-cli": "^4.0.0",
-    "@angular/core": "^4.0.0",
-    "@angular/platform-browser": "^4.0.0",
-    "@angular/platform-browser-dynamic": "^4.0.0",
-    "@compodoc/compodoc": "^1.1.2",
-    "@types/jasmine": "^2.8.7",
-    "@types/node": "^10.0.3",
-    "codelyzer": "^4.3.0",
-    "core-js": "^2.5.5",
-    "del": "^3.0.0",
-    "gulp": "^3.9.1",
-    "gulp-rollup": "^2.15.0",
-    "jasmine-core": "~2.8.0",
-    "jasmine-spec-reporter": "~4.2.1",
-    "karma": "^2.0.2",
-    "karma-chrome-launcher": "~2.2.0",
-    "karma-cli": "~1.0.1",
-    "karma-coverage-istanbul-reporter": "^1.3.0",
-    "karma-jasmine": "^1.1.2",
-    "karma-jasmine-html-reporter": "^0.2.2",
-    "node-watch": "^0.5.5",
-    "protractor": "~5.3.1",
-    "rollup": "^0.58.2",
-    "run-sequence": "^2.2.0",
-    "rxjs": "^5.5.10",
-    "ts-node": "^6.0.2",
-    "tslint": "^5.10.0",
-    "typescript": "~2.6.2",
-    "zone.js": "^0.8.26"
+  "module": "ngx-segment-analytics.js",
+  "typings": "ngx-segment-analytics.d.ts",
+  "peerDependencies": {
+    "@angular/core": "^4.0.0 || ^5.0.0 || ^6.0.0",
+    "@angular/common": "^4.0.0 || ^5.0.0 || ^6.0.0"
   },
-  "engines": {
-    "node": ">=8.0.0"
+  "dependencies": {
+    "analytics.js": "^2.9.1"
   }
 }
