@@ -45,7 +45,7 @@ export class SegmentService {
                 'once',
                 'off',
                 'on',
-                'addSourceMiddleware',
+                'addSourceMiddleware'
             ];
 
             this.w.analytics.factory = (method: string) => {

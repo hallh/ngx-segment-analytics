@@ -90,6 +90,7 @@ on(method: string, callback: (event?: string, properties?: any, options?: any) =
 trackLink(elements: HTMLElement | HTMLElement[], event: string | Function, properties?: Object | Function): void;
 trackForm(forms: HTMLElement | HTMLElement[], event: string | Function, properties?: Object | Function): void;
 timeout(timeout: number): void;
+addSourceMiddleware(middleware: ({integrations, payload, next}) => void): void;
 ```
 
 ## Development
