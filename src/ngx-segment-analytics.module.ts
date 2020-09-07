@@ -1,15 +1,26 @@
-import {ModuleWithProviders, NgModule, Optional, PLATFORM_ID, SkipSelf} from '@angular/core';
-import {CommonModule, isPlatformBrowser} from '@angular/common';
-import {SegmentService} from './ngx-segment-analytics.service';
-import {SEGMENT_CONFIG, SegmentConfig} from './ngx-segment-analytics.config';
-import {WindowWrapper} from './window-wrapper';
+import { NgModule, ModuleWithProviders, Optional, SkipSelf, InjectionToken, Injectable, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { SegmentService } from './ngx-segment-analytics.service';
+import { SegmentConfig } from './ngx-segment-analytics.config';
+
+/** Segment Configuration Injection Token */
+export const SEGMENT_CONFIG: InjectionToken<SegmentConfig> = new InjectionToken<SegmentConfig>('ngx-segment-analytics.config');
+
+/**
+ * Window Wrapper for Angular AOT
+ */
+@Injectable()
+export class WindowWrapper {
+    /** Segment Analytics.js instance */
+    public analytics: any;
+}
 
 /**
  * Window Provider for Angular AOT
  * @returns Browser Window instance
  */
 export function getWindow(platformId: any) {
-    return isPlatformBrowser(platformId) ? window : {};
+  return isPlatformBrowser(platformId) ? window : {};
 }
 
 /**
@@ -18,7 +29,7 @@ export function getWindow(platformId: any) {
 @NgModule({
     imports: [CommonModule],
     providers: [
-        {provide: WindowWrapper, useFactory: getWindow, deps: [PLATFORM_ID]},
+        { provide: WindowWrapper, useFactory: getWindow, deps: [PLATFORM_ID] }
     ]
 })
 export class SegmentModule {
@@ -29,11 +40,11 @@ export class SegmentModule {
      * @param config Segment Configuration
      * @returns Segment Module
      */
-    public static forRoot(config?: SegmentConfig): ModuleWithProviders<SegmentModule> {
+    public static forRoot(config?: SegmentConfig): ModuleWithProviders {
         return {
             ngModule: SegmentModule,
             providers: [
-                {provide: SEGMENT_CONFIG, useValue: config},
+                { provide: SEGMENT_CONFIG, useValue: config },
                 SegmentService,
             ],
         };

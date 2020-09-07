@@ -1,58 +1,34 @@
-import {Inject, Injectable} from '@angular/core';
-import {DOCUMENT} from '@angular/common';
-import {DEFAULT_CONFIG, SEGMENT_CONFIG, SegmentConfig} from './ngx-segment-analytics.config';
-import {WindowWrapper} from './window-wrapper';
+import { Inject, Injectable } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { SEGMENT_CONFIG, WindowWrapper } from './ngx-segment-analytics.module';
+import { SegmentConfig } from './ngx-segment-analytics.config';
 
-export interface SegmentPlugin {
-    // Video Plugins
-    new(player: any, accessToken: string): any;
-
-    // Others plugins
-    new(): any;
-}
-
-@Injectable({
-    providedIn: 'root',
-})
+/** @dynamic */
+@Injectable()
 export class SegmentService {
 
-    private readonly _config: SegmentConfig;
-
     /**
-     * @param _w Browser window
-     * @param _doc Browser DOM
-     * @param userConfig Segment configuration
+     * @param w Browser window
+     * @param doc Browser DOM
+     * @param config Segment configuration
      */
     constructor(
-        @Inject(WindowWrapper) private _w: WindowWrapper,
-        @Inject(DOCUMENT) private _doc: any,
-        @Inject(SEGMENT_CONFIG) userConfig: SegmentConfig
+        @Inject(WindowWrapper) private w: WindowWrapper,
+        @Inject(DOCUMENT) private doc: Document,
+        @Inject(SEGMENT_CONFIG) private config: SegmentConfig
     ) {
-        this._config = {...DEFAULT_CONFIG, ...userConfig};
-
-        if (this._config.loadOnInitialization && (typeof this._config.apiKey === 'undefined' || this._config.apiKey === '')) {
-            console.error('The API Key cannot be an empty string if Segment must be loaded on initialization.');
-            return;
-        }
-
         if (
-            typeof this._w.analytics === 'undefined'
-            || typeof this._w.analytics.initialize === 'undefined'
-            || this._w.analytics.initialize === false
+            typeof this.w.analytics === 'undefined'
+            || typeof this.w.analytics.initialize === 'undefined'
+            || this.w.analytics.initialize === false
         ) {
-            if (typeof this._w.analytics !== 'undefined' && this._w.analytics.invoked === true) {
-                console.error('Segment snippet included twice.');
-                return;
+            if (this.config.debug) {
+                console.log('Segment initialization ...');
             }
 
-            if (this._config.debug) {
-                console.log('Segment initialization...');
-            }
+            this.w.analytics = [];
 
-            this._w.analytics = [];
-            this._w.analytics.invoked = true;
-
-            this._w.analytics.methods = [
+            this.w.analytics.methods = [
                 'trackSubmit',
                 'trackClick',
                 'trackLink',
@@ -72,48 +48,38 @@ export class SegmentService {
                 'addSourceMiddleware',
             ];
 
-            this._w.analytics.factory = (method: string) => {
+            this.w.analytics.factory = (method: string) => {
                 return (...args) => {
                     args.unshift(method);
-                    this._w.analytics.push(args);
-                    return this._w.analytics;
+                    this.w.analytics.push(args);
+                    return this.w.analytics;
                 };
             };
 
-            this._w.analytics.methods.forEach((method: string) => {
-                this._w.analytics[method] = this._w.analytics.factory(method);
+            this.w.analytics.methods.forEach((method: string) => {
+                this.w.analytics[method] = this.w.analytics.factory(method);
             });
 
-            this._w.analytics.load = (key: string, options: { integrations: { [key: string]: boolean } }) => {
-                const script = this._doc.createElement('script');
+            this.w.analytics.load = (key: string) => {
+                const script = this.doc.createElement('script');
                 script.type = 'text/javascript';
                 script.async = true;
-                script.src = 'https://' + this._config.segmentHost + this._config.segmentUri.replace('$API_KEY$', key);
+                script.src = ('https:' === this.doc.location.protocol
+                        ? 'https://' : 'http://')
+                    + 'cdn.segment.com/analytics.js/v1/'
+                    + key + '/analytics.min.js';
 
-                const first = this._doc.getElementsByTagName('script')[0];
+                const first = this.doc.getElementsByTagName('script')[0];
                 first.parentNode.insertBefore(script, first);
-                this._w.analytics._loadOptions = options;
             };
 
-            this._w.analytics.SNIPPET_VERSION = '4.1.0';
-            if (this._config.loadOnInitialization) {
-                this.load(this._config.apiKey);
+            this.w.analytics.SNIPPET_VERSION = '4.0.0';
+            this.w.analytics.load(this.config.apiKey);
+            if (this.config.debug) {
+                console.log('Segment initialized');
             }
+            this.debug(this.config.debug);
         }
-    }
-
-    /**
-     * Load Segment configuration.
-     *
-     * @param apiKey Write API Key
-     * @param options Optional parameters
-     */
-    public load(apiKey: string, options?: any): void {
-        this._w.analytics.load(apiKey, options);
-        if (this._config.debug) {
-            console.log('Segment initialized');
-        }
-        this.debug(this._config.debug);
     }
 
     /**
@@ -127,7 +93,7 @@ export class SegmentService {
      */
     public identify(userId?: string, traits?: any, options?: any): Promise<SegmentService> {
         return new Promise((resolve) => {
-            this._w.analytics.identify(userId, traits, options, _ => resolve(this));
+            this.w.analytics.identify(userId, traits, options, resolve(this));
         });
     }
 
@@ -142,7 +108,7 @@ export class SegmentService {
      */
     public track(event: string, properties?: any, options?: any): Promise<SegmentService> {
         return new Promise((resolve) => {
-            this._w.analytics.track(event, properties, options, _ => resolve(this));
+            this.w.analytics.track(event, properties, options, resolve(this));
         });
     }
 
@@ -167,8 +133,8 @@ export class SegmentService {
      *
      * @returns
      */
-    public page(category: string, name: string, properties?: any, options?: any): Promise<SegmentService>;
 
+    public page(category: string, name: string, properties?: any, options?: any): Promise<SegmentService>;
     /**
      * The page method lets you record page views on your website, along with optional extra information about the page being viewed.
      *
@@ -179,9 +145,14 @@ export class SegmentService {
      *
      * @returns
      */
-    public page(category?: string, name?: string, properties?: any, options?: any): Promise<SegmentService> {
+    public page(
+        category?: string,
+        name?: string,
+        properties?: any,
+        options?: any
+    ): Promise<SegmentService> {
         return new Promise((resolve) => {
-            this._w.analytics.page(category, name, properties, options, _ => resolve(this));
+            this.w.analytics.page(category, name, properties, options, resolve(this));
         });
     }
 
@@ -196,7 +167,7 @@ export class SegmentService {
      */
     public group(groupId: string, traits?: any): Promise<SegmentService> {
         return new Promise((resolve) => {
-            this._w.analytics.group(groupId, traits, _ => resolve(this));
+            this.w.analytics.group(groupId, traits, resolve(this));
         });
     }
 
@@ -211,7 +182,7 @@ export class SegmentService {
      */
     public alias(userId: string, previousId?: string, options?: any): Promise<SegmentService> {
         return new Promise((resolve) => {
-            this._w.analytics.alias(userId, previousId, options, _ => resolve(this));
+            this.w.analytics.alias(userId, previousId, options, resolve(this));
         });
     }
 
@@ -223,7 +194,7 @@ export class SegmentService {
      */
     public ready(): Promise<SegmentService> {
         return new Promise((resolve) => {
-            this._w.analytics.ready(_ => resolve(this));
+            this.w.analytics.ready(resolve(this));
         });
     }
 
@@ -233,7 +204,7 @@ export class SegmentService {
      * @returns Informations about the currently identified user
      */
     public user(): any {
-        return this._w.analytics.user();
+        return this.w.analytics.user();
     }
 
     /**
@@ -241,8 +212,8 @@ export class SegmentService {
      *
      * @returns Identifier about the currently identified user
      */
-    public id(): string | null {
-        return this._w.analytics.id();
+    public id(): string|null {
+        return this.w.analytics.id();
     }
 
     /**
@@ -251,14 +222,14 @@ export class SegmentService {
      * @returns Traits about the currently identified user
      */
     public traits(): any {
-        return this._w.analytics.traits();
+        return this.w.analytics.traits();
     }
 
     /**
      * Reset the id, including anonymousId, and clear traits for the currently identified user and group.
      */
     public reset(): void {
-        this._w.analytics.reset();
+        this.w.analytics.reset();
     }
 
     /**
@@ -267,7 +238,7 @@ export class SegmentService {
      * @param enabled Enable or not the debug mode
      */
     public debug(enabled?: boolean): void {
-        this._w.analytics.debug(enabled);
+        this.w.analytics.debug(enabled);
     }
 
     /**
@@ -276,8 +247,11 @@ export class SegmentService {
      * @param method Name of the method to listen for
      * @param callback A function to execute after each the emitted method
      */
-    public on(method: string, callback: (event?: string, properties?: any, options?: any) => any): void {
-        this._w.analytics.on(method, callback);
+    public on(
+        method: string,
+        callback: (event?: string, properties?: any, options?: any) => any
+    ): void {
+        this.w.analytics.on(method, callback);
     }
 
     /**
@@ -288,8 +262,12 @@ export class SegmentService {
      *              as the name of the track event.
      * @param properties A dictionary of properties to pass with the `track` method.
      */
-    public trackLink(elements: HTMLElement | HTMLElement[], event: string | Function, properties?: any | Function): void {
-        this._w.analytics.trackLink(elements, event, properties);
+    public trackLink(
+        elements: HTMLElement | HTMLElement[],
+        event: string | Function,
+        properties?: any | Function
+    ): void {
+        this.w.analytics.trackLink(elements, event, properties);
     }
 
     /**
@@ -299,8 +277,12 @@ export class SegmentService {
      * @param event The name of the event, passed to the `track` method.
      * @param properties A dictionary of properties to pass with the `track` method.
      */
-    public trackForm(forms: HTMLElement | HTMLElement[], event: string | Function, properties?: any | Function): void {
-        this._w.analytics.trackForm(forms, event, properties);
+    public trackForm(
+        forms: HTMLElement | HTMLElement[],
+        event: string | Function,
+        properties?: any | Function
+    ): void {
+        this.w.analytics.trackForm(forms, event, properties);
     }
 
     /**
@@ -309,7 +291,7 @@ export class SegmentService {
      * @param timeout Number of milliseconds
      */
     public timeout(timeout: number): void {
-        this._w.analytics.timeout(timeout);
+        this.w.analytics.timeout(timeout);
     }
 
     /**
@@ -318,10 +300,6 @@ export class SegmentService {
      * @param middleware Custom function
      */
     public addSourceMiddleware(middleware: ({integrations, payload, next}) => void): void {
-        this._w.analytics.addSourceMiddleware(middleware);
-    }
-
-    public get plugins(): { [pluginName: string]: SegmentPlugin } {
-        return this._w.analytics.plugins;
+        this.w.analytics.addSourceMiddleware(middleware);
     }
 }
